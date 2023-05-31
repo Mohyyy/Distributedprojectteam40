@@ -14,22 +14,22 @@ from Protocols import (
 
 
 class Proxy(Thread):
-    def __init__(self, addr=None, *args, **kwargs) -> None:
+    def __init__(self, address=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.sock = socket(AF_INET, SOCK_DGRAM)
-        if addr:
-            self.sock.bind((HOST, addr))
+        if address:
+            self.sock.bind((HOST, address))
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         data = dumpData((GameState.GameSetup, 0))
         self.sock.sendto(data, (HOST, PORT))
-        self.LatestSnapshot = GameSnapshot()
+        self.latest_snapshot: GameSnapshot = GameSnapshot
 
-    def waitOtherPlayers(self) -> bool:
-        readyToRead, _, _ = select([self.sock], [], [], 20 / 1000)
-        if readyToRead:
+    def wait_for_other_players(self) -> bool:
+        ready_to_read, _, _ = select([self.sock], [], [], 20 / 1000)
+        if ready_to_read:
             data, _ = self.sock.recvfrom(1024)
             if data:
-                s, self.LatestSnapshot = getData(data)
+                state, self.latest_snapshot = getData(data)
                 return True
         return False
 
@@ -38,15 +38,16 @@ class Proxy(Thread):
         self.sock.sendto(data, (HOST, PORT))
 
     def run(self) -> None:
-        sock = self.sock.dup()
-        ticks = 0
-        while ticks < 10:
-            data, _ = sock.recvfrom(4096)
+        duplicate_sock = self.sock.dup()
+        tick_count = 0
+        while tick_count < 10:
+            data, _ = duplicate_sock.recvfrom(4096)
             if data:
-                ticks = 0
+                tick_count = 0
                 packet = getData(data)
-                if packet[0] == GameState.GameEnd:
+                if packet[0] is GameState.GameEnd:
+                    packet[1]
                     break
-                self.LatestSnapshot = packet[1]
+                self.latest_snapshot = packet[1]
             else:
-                ticks += 1
+                tick_count += 1

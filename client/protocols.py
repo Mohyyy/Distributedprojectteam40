@@ -1,36 +1,43 @@
+# Enums
 from enum import Enum
-import pickle
 
-class GameState(Enum):
+
+class GameStatus(Enum):
     MainMenu = 0
     GameSetup = 1
     GamePlay = 2
     GameEnd = 3
 
-PlayerSnapshot = tuple[int, int, int]  # x, y, deg
-GameSnapshot = list[PlayerSnapshot]
-Movement = list[int, int]  # Direction and Angle
-Packet = tuple[GameState, int]
 
-def getData(data: bytes) -> Packet:
+# Types
+PlayerSnapshotType = tuple[int, int, int]  # x, y, deg
+GameSnapshotType = list[PlayerSnapshotType]
+MovementType = list[int, 2]  # Direction and Angle
+PacketType = tuple[GameStatus, int | GameSnapshotType]
+
+# Helper Functions
+import pickle
+
+
+def load_data(data: bytes) -> PacketType:
     return pickle.loads(data)
 
 
-def dumpData(data: Packet) -> bytes:
+def serialize_data(data: PacketType) -> bytes:
     return pickle.dumps(data)
 
 
+# Constants
 SPEED = 5
-DEGREE = 3
+ANGLE = 3
 
-GAME_SIZE = (800, 600)
-UI_SIZE = 250
-WINDOW_SIZE = (GAME_SIZE[0] + UI_SIZE, GAME_SIZE[1])
+GAME_DIMENSIONS = (800, 600)
+UI_DIMENSIONS = 250
+WINDOW_DIMENSIONS = (GAME_DIMENSIONS[0] + UI_DIMENSIONS, GAME_DIMENSIONS[1])
 
-CTB_HEIGHT = 500
-ETB_HEIGHT = 50
-BTN_HEIGHT = 50
+CHAT_BOX_HEIGHT = 500
+ENTRY_BOX_HEIGHT = 50
+BUTTON_HEIGHT = 50
 
-HOST = "localhost"
-PORT = 8888
-MAX_PLAYERS = 4
+HOST, PORT = "localhost", 8888
+MAX_PLAYER_COUNT = 4

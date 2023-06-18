@@ -1,4 +1,3 @@
-
 from math import sin, cos, radians
 
 class Movement:
@@ -9,11 +8,11 @@ DEGREE = 1
 SPEED = 10
 
 class Player:
-    def __init__(self, id: int) -> None:
+    def __init__(self, id: int, x: int, y: int, deg: int) -> None:
         self.id = id
-        self.x = 100
-        self.y = 100 + id * 10
-        self.deg = 0
+        self.x = x
+        self.y = y
+        self.deg = deg
 
     def move(self, movement: tuple) -> None:
         direction, angle = movement

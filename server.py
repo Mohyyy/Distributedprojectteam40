@@ -1,55 +1,61 @@
 import socket
-from _thread import *
-from player import Player
-import pickle
+import threading
+import signal
+import sys
 
-server = "192.168.1.100"
-port = 5555
+HOST = '192.168.1.15'
+PORT = 5555
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((HOST, PORT))
+server.listen()
 
-try:
-    s.bind((server, port))
-except socket.error as e:
-    str(e)
+clients = []
+scores = {}
+nicknames = []
 
-s.listen(2)
-print("Waiting for a connection, Server Started")
+def broadcast(message):
+    for client in clients:
+        client.send(message)
 
-
-players = [Player(0,0,50,50,(255,0,0)), Player(100,100, 50,50, (0,0,255))]
-
-def threaded_client(conn, player):
-    conn.send(pickle.dumps(players[player]))
-    reply = ""
+def handle(client):
     while True:
         try:
-            data = pickle.loads(conn.recv(2048))
-            players[player] = data
-
-            if not data:
-                print("Disconnected")
-                break
-            else:
-                if player == 1:
-                    reply = players[0]
-                else:
-                    reply = players[1]
-
-                print("Received: ", data)
-                print("Sending : ", reply)
-
-            conn.sendall(pickle.dumps(reply))
-        except:
+            message = client.recv(1024)
+            print(f"{nicknames[clients.index(client)]} says {message}")
+            broadcast(message)
+        except Exception as e:
+            print(f"Error handling client {client}: {e}")
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            nickname = nicknames[index]
+            nicknames.remove(nickname)
             break
 
-    print("Lost connection")
-    conn.close()
+def receive():
+    while True:
+        try:
+            client, address = server.accept()
+            print(f"Connected with {str(address)}!")
+            client.send("NICK".encode('utf-8'))
+            nickname = client.recv(1024)
+            nicknames.append(nickname)
+            clients.append(client)
+            print(f"Nickname of the client is {nickname}")
+            broadcast(f"{nickname} connected to the server !\n".encode('utf-8'))
+            client.send("Connected to the server".encode('utf-8'))
+            thread = threading.Thread(target=handle, args=(client,))
+            thread.start()
+        except Exception as e:
+            print(f"Error accepting connection: {e}")
 
-currentPlayer = 0
-while True:
-    conn, addr = s.accept()
-    print("Connected to:", addr)
+def shutdown_server(signal, frame):
+    print("Shutting down server...")
+    server.close()
+    sys.exit(0)
 
-    start_new_thread(threaded_client, (conn, currentPlayer))
-    currentPlayer += 1
+signal.signal(signal.SIGINT, shutdown_server)
+
+print("Server running")
+receive()

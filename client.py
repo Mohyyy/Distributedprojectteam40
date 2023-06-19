@@ -4,9 +4,8 @@ import tkinter
 import tkinter.scrolledtext
 from tkinter import simpledialog
 from game import*
-from player import *
 
-HOST = '192.168.1.15'
+HOST = '13.53.125.84'
 PORT = 5555
 
 
@@ -48,28 +47,27 @@ class Client:
         self.win.mainloop()
 
     def write(self):
-        message = f"{self.nickname}: {self.input_area.get('1.0', 'end').strip()}"
-        if message != f"{self.nickname}:":  # Make sure the message is not empty
-            self.sock.send(message.encode('utf-8'))
-            self.input_area.delete('1.0', 'end')
+        message = f"{self.nickname}:{self.input_area.get('1.0','end')}"
+        self.sock.send(message.encode('utf-8'))
+        self.input_area.delete('1.0','end')
     def stop(self):
         self.running= False
         self.win.destroy()
         self.sock.close()
         exit(0)
 
+
+
     def receive(self):
         while self.running:
             try:
-                message_bytes = self.sock.recv(1024)
-                message = message_bytes.decode('utf-8')
-
-                if message.startswith('NICK'):
+                message = self.sock.recv(1024)
+                if message == 'NICK':
                     self.sock.send(self.nickname.encode('utf-8'))
                 else:
                     if self.gui_done:
                         self.text_area.config(state='normal')
-                        self.text_area.insert('end', message + '\n')
+                        self.text_area.insert('end', message)
                         self.text_area.yview('end')
                         self.text_area.config(state='disabled')
             except ConnectionAbortedError:
@@ -79,14 +77,10 @@ class Client:
                 self.sock.close()
                 break
 
-def start_game(client):
-    game = CarRacing(client)
-    game_thread = threading.Thread(target=game.racing_window)
-    game_thread.start()
+client= Client(HOST, PORT)
 
-
-client = Client(HOST, PORT)
-start_game(client)
+game = CarRacing(Client)
+game.racing_window()
 
 
 
